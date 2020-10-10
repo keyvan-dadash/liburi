@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <map>
 
 #define DEFAULT_PORT 443
 
@@ -29,6 +30,10 @@ namespace Uri {
 
                 std::vector< std::string > path;
 
+                std::map< std::string, std::string > queryParams;
+
+                std::string fragment;
+
                 bool isValid;
 
                 bool hasUserInfo;
@@ -36,6 +41,12 @@ namespace Uri {
                 bool hastHost;
 
                 bool hasPort;
+
+                bool hasPath;
+
+                bool hasQueryParams;
+
+                bool hasFragment;
 
             };
 
@@ -58,6 +69,20 @@ namespace Uri {
 
             bool parseFromString(std::string uriStirng);
 
+            void extractSchema();
+
+            void extractUserInfo();
+
+            void extractHost();
+
+            void extractPort();
+
+            void extractPath();
+
+            void extractQueryParams();
+
+            void extractFragment();
+
             std::string getSchema() const;
 
             std::string getUserInfo() const;
@@ -68,16 +93,9 @@ namespace Uri {
 
             std::vector< std::string > getPath() const;
 
-            void extractSchema();
+            std::map< std::string, std::string > getQueryParams() const;
 
-            void extractUserInfo();
-
-            void extractHost();
-
-            void extractPort();
-
-
-
+            std::string getFragment() const;
 
     };
 

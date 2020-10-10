@@ -23,6 +23,9 @@ namespace Uri {
         this->extractUserInfo();
         this->extractHost();
         this->extractPort();
+        this->extractPath();
+        this->extractQueryParams();
+        this->extractFragment();
         return true;
     }
 
@@ -115,6 +118,86 @@ namespace Uri {
         this->comp_->port = std::atoi(uri.substr(colonBeforePortAfterSchmea + 1, (endOfPort - colonBeforePortAfterSchmea)).c_str());
     }
 
+    void Uri::extractPath() 
+    {
+        std::string uri = this->comp_->uri;
+
+        if (this->comp_->hastHost) {
+            size_t endOfSlashSlash = uri.find("//") + 2;
+            std::string stringAfterSlashSlash = uri.substr(endOfSlashSlash);
+            size_t pos = stringAfterSlashSlash.find('/');
+            while (pos != std::string::npos) {
+                size_t endOfLocalPath = stringAfterSlashSlash.find('/', pos + 1);
+
+                if (endOfLocalPath == std::string::npos)
+                    endOfLocalPath = stringAfterSlashSlash.find('?');
+                if (endOfLocalPath == std::string::npos)
+                    endOfLocalPath = stringAfterSlashSlash.size();
+
+                this->comp_->path.push_back(stringAfterSlashSlash.substr(pos + 1, (endOfLocalPath - pos - 1)));
+                pos = stringAfterSlashSlash.find('/', pos + 1);
+            }
+        } else {
+            size_t schemaEnd = uri.find(":") + 1;
+            size_t pathEnd = uri.size();
+            this->comp_->path.push_back(uri.substr(schemaEnd, (pathEnd - schemaEnd)));
+        }
+        if (this->comp_->path.size() >= 1) 
+            this->comp_->hasPath = true;
+        else 
+            this->comp_->hasPath = false;
+    }
+
+    void Uri::extractQueryParams()
+    {
+        std::string uri = this->comp_->uri;
+        size_t startOfQueryParam = uri.find('?');
+        
+        std::vector< std::string > paramsWithKeyAndValue;
+        while(startOfQueryParam != std::string::npos) {
+            size_t endOfCurQueryParams = uri.find('&', startOfQueryParam + 1);
+            if (endOfCurQueryParams == std::string::npos) 
+                endOfCurQueryParams = uri.find('#');
+            if (endOfCurQueryParams == std::string::npos) 
+                endOfCurQueryParams = uri.size();
+            paramsWithKeyAndValue.push_back(uri.substr(startOfQueryParam + 1, (endOfCurQueryParams - startOfQueryParam - 1)));
+            startOfQueryParam = uri.find('&', startOfQueryParam + 1);
+        }
+
+        std::map< std::string, std::string > queryParams;
+        for(auto &paramWithKV : paramsWithKeyAndValue) {
+            size_t startOfValue = paramWithKV.find('=') + 1;
+            std::string value;
+            if (startOfValue == std::string::npos) 
+                value = "";
+            else
+                value = paramWithKV.substr(startOfValue, (paramWithKV.size() - startOfValue));
+            
+            size_t endOfKey = startOfValue - 1;
+            queryParams[paramWithKV.substr(0, endOfKey)] = value;
+        }
+
+        this->comp_->queryParams = queryParams;
+        if (this->comp_->queryParams.size() >= 1) 
+            this->comp_->hasQueryParams = true;
+        else 
+            this->comp_->hasQueryParams = false;
+    }
+
+    void Uri::extractFragment()
+    {
+        std::string uri = this->comp_->uri;
+
+        size_t startOfFragment = uri.find('#');
+        if (startOfFragment == std::string::npos) {
+            this->comp_->hasFragment = false;
+            return;
+        }
+        this->comp_->hasFragment = true;
+
+        this->comp_->fragment = uri.substr(startOfFragment + 1, (uri.size() - startOfFragment - 1));
+    }
+
     std::string Uri::getSchema() const 
     {
         return  this->comp_->schema;
@@ -137,9 +220,18 @@ namespace Uri {
 
     std::vector< std::string > Uri::getPath() const 
     {
-        return std::vector< std::string > { "", "ops" };
+        return this->comp_->path;
     }
 
+    std::map< std::string, std::string > Uri::getQueryParams() const
+    {
+        return this->comp_->queryParams;
+    }
+
+    std::string Uri::getFragment() const
+    {
+        return this->comp_->fragment;
+    }
 
 
 

@@ -14,8 +14,11 @@ TEST(UriTests, ParseAndGetInfoTest1) {
     ASSERT_EQ(uri.getHost(), "google.com");
     ASSERT_EQ(uri.getPort(), 443);
     ASSERT_EQ(uri.getPath(), (std::vector< std::string > {
-        "",
         "ops"
+    }));
+    ASSERT_EQ(uri.getQueryParams(), (std::map< std::string, std::string > {
+        {"foo", "bar"},
+        {"foo1", "bar1"}
     }));
 }
 
@@ -28,9 +31,26 @@ TEST(UriTests, ParseAndGetInfoTest2) {
     ASSERT_EQ(uri.getHost(), "www.example.com");
     ASSERT_EQ(uri.getPort(), 123);
     ASSERT_EQ(uri.getPath(), (std::vector< std::string > {
-        "",
-        "ops"
+        "forum",
+        "questions",
+        ""
+    }));
+    ASSERT_EQ(uri.getQueryParams(), (std::map< std::string, std::string > {
+        {"tag", "networking"},
+        {"order", "newest"}
+    }));
+    ASSERT_EQ(uri.getFragment(), "top");
+}
+
+TEST(UriTests, ParseAndGetInfoTest3) {
+    ASSERT_TRUE(true);
+    Uri::Uri uri;
+    ASSERT_TRUE(uri.parseFromString("mailto:John.Doe@example.com"));
+    ASSERT_EQ(uri.getSchema(), "mailto");
+    ASSERT_EQ(uri.getPath(), (std::vector< std::string > {
+        "John.Doe@example.com"
     }));
 }
+
 
 #endif
