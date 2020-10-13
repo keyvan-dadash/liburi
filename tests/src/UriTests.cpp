@@ -6,7 +6,6 @@
 #include <gtest/gtest.h>
 
 TEST(UriTests, ParseAndGetInfoTest1) {
-    ASSERT_TRUE(true);
     Uri::Uri uri;
     ASSERT_TRUE(uri.parseFromString("https://google.com/ops?foo=bar&foo1=bar1"));
     ASSERT_EQ(uri.getSchema(), "https");
@@ -23,7 +22,6 @@ TEST(UriTests, ParseAndGetInfoTest1) {
 }
 
 TEST(UriTests, ParseAndGetInfoTest2) {
-    ASSERT_TRUE(true);
     Uri::Uri uri;
     ASSERT_TRUE(uri.parseFromString("https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top"));
     ASSERT_EQ(uri.getSchema(), "https");
@@ -50,6 +48,60 @@ TEST(UriTests, ParseAndGetInfoTest3) {
     ASSERT_EQ(uri.getPath(), (std::vector< std::string > {
         "John.Doe@example.com"
     }));
+}
+
+TEST(UriTests, ParseTwiceFirstWithPortAndQueryAndFragmentSecondWithoutThese) {
+    Uri::Uri uri;
+    ASSERT_TRUE(uri.parseFromString("https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top"));
+    ASSERT_TRUE(uri.parseFromString("https://www.example.com"));
+    ASSERT_EQ(uri.getSchema(), "https");
+    ASSERT_EQ(uri.getPath(), (std::vector< std::string > {
+        
+    }));
+    ASSERT_EQ(uri.getPort(), 443);
+    ASSERT_EQ(uri.getQueryParams(), (std::map< std::string, std::string > {
+        
+    }));
+}
+
+TEST(UriTests, ParseUriWithValidPortButWierdType) {
+    Uri::Uri uri;
+    ASSERT_TRUE(uri.parseFromString("https://www.example.com:00000123/forum/questions/?tag=networking&order=newest#top"));
+    ASSERT_TRUE(uri.hasPort());
+    ASSERT_EQ(uri.getPort(), 123);
+}
+
+TEST(UriTests, ParseUriWithInvalidPort) {
+    Uri::Uri uri;
+    ASSERT_FALSE(uri.parseFromString("https://www.example.com:123s/forum/questions/?tag=networking&order=newest#top"));
+    ASSERT_FALSE(uri.hasPort());
+}
+
+TEST(UriTests, ParseUriWithBadport) {
+    Uri::Uri uri;
+    ASSERT_FALSE(uri.parseFromString("https://www.example.com:65536/forum/questions/?tag=networking&order=newest#top"));
+    ASSERT_FALSE(uri.hasPort());
+}
+
+TEST(UriTests, ParseUriWithRelativeAndFullPath) {
+    Uri::Uri uri;
+    typedef struct {
+        std::string uri;
+        bool isRelative;
+    } uriRelativeTest;
+    std::vector< uriRelativeTest > tests {
+        {"/foo", true},
+        {"foo/", true},
+        {"/foo/bar/hoo/loo", true},
+        {"foo/bar/hoo/loo", true},
+        {"https://www.example.com/foo/bar", false}
+    };
+    int index = 0;
+    for (auto &test : tests) {
+        ASSERT_TRUE(uri.parseFromString(test.uri)) << index;
+        ASSERT_EQ(uri.isRelative(), test.isRelative) << index;
+        index++;
+    }
 }
 
 

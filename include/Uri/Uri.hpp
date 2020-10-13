@@ -36,6 +36,8 @@ namespace Uri {
 
                 bool isValid;
 
+                bool hasSchema;
+
                 bool hasUserInfo;
 
                 bool hastHost;
@@ -47,6 +49,8 @@ namespace Uri {
                 bool hasQueryParams;
 
                 bool hasFragment;
+
+                bool isRelative;
 
             };
 
@@ -68,6 +72,10 @@ namespace Uri {
             Uri();
 
             bool parseFromString(std::string uriStirng);
+
+            void resetComponents();
+
+            bool parse();
 
             void extractSchema();
 
@@ -96,6 +104,24 @@ namespace Uri {
             std::map< std::string, std::string > getQueryParams() const;
 
             std::string getFragment() const;
+
+            bool isValid() const;
+
+            bool hasSchema() const;
+
+            bool hasUserInfo() const;
+
+            bool hasHost() const;
+
+            bool hasPort() const;
+
+            bool hasPath() const;
+
+            bool hasQueryParams() const;
+
+            bool hasFragment() const;
+
+            bool isRelative() const;
 
     };
 

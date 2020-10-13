@@ -18,15 +18,33 @@ namespace Uri {
 
     bool Uri::parseFromString(std::string uriStirng) 
     {
+        this->resetComponents();
         this->comp_->uri = uriStirng;
-        this->extractSchema();
-        this->extractUserInfo();
-        this->extractHost();
-        this->extractPort();
-        this->extractPath();
-        this->extractQueryParams();
-        this->extractFragment();
-        return true;
+        return this->parse();
+    }
+
+    void Uri::resetComponents() 
+    {
+        this->comp_.reset(new uriComponents);
+    }
+
+    bool Uri::parse() 
+    {
+        try {
+            this->extractSchema();
+            this->extractUserInfo();
+            this->extractHost();
+            this->extractPort();
+            this->extractPath();
+            this->extractQueryParams();
+            this->extractFragment();
+            this->comp_->isValid = true;
+        } 
+        catch (std::exception &ex) {
+            //std::cerr << ex.what() << std::endl;
+            this->comp_->isValid = false;
+        }
+        return this->comp_->isValid;
     }
 
     void Uri::extractSchema() 
@@ -34,7 +52,14 @@ namespace Uri {
         std::string uri = this->comp_->uri;
 
         size_t delemiterChar = uri.find(':');
+        size_t slashSlash = uri.find("//");
+        if (slashSlash == std::string::npos && delemiterChar == std::string::npos) {
+            this->comp_->hasSchema = false;
+            this->comp_->isRelative = true;
+            return;
+        }
         this->comp_->schema = uri.substr(0, delemiterChar);
+        this->comp_->isRelative = false;
     }
 
     void Uri::extractUserInfo() 
@@ -115,7 +140,33 @@ namespace Uri {
         } else {
             endOfPort += colonBeforePortAfterSchmea;
         }
-        this->comp_->port = std::atoi(uri.substr(colonBeforePortAfterSchmea + 1, (endOfPort - colonBeforePortAfterSchmea)).c_str());
+        std::string port = uri.substr(colonBeforePortAfterSchmea + 1, (endOfPort - colonBeforePortAfterSchmea));
+        int portStartIndex = 0;
+        int prefixZeroIndex = 0;
+
+        //check if port is positive and have no invalid char
+        for (size_t i = 0; i < port.size(); i++)
+        {
+            if (port.at(i) > '9' || port.at(i) < '0') {
+                this->comp_->hasPort = false;
+                throw std::runtime_error(std::string("the port is invalid"));
+            }
+            if (prefixZeroIndex == i && port.at(i) == '0') {
+                portStartIndex++;
+                prefixZeroIndex++;
+            }
+            
+        }
+
+        //delete prefix 0
+        port = port.substr(portStartIndex);
+
+        if (port.size() > 5 || std::atoi(port.c_str()) > 65535) {
+            this->comp_->hasPort = false;
+            throw std::runtime_error(std::string("port range is between 0 and 65535"));
+        }
+        
+        this->comp_->port = std::atoi(port.c_str());
     }
 
     void Uri::extractPath() 
@@ -233,6 +284,50 @@ namespace Uri {
         return this->comp_->fragment;
     }
 
+    bool Uri::isValid() const
+    {
+        return this->comp_->isValid;
+    }
+
+    bool Uri::hasSchema() const
+    {
+        return this->comp_->hasSchema;
+    }
+
+    bool Uri::hasUserInfo() const
+    {
+        return this->comp_->hasUserInfo;
+    }
+
+    bool Uri::hasHost() const
+    {
+        return this->comp_->hastHost;
+    }
+
+    bool Uri::hasPort() const
+    {
+        return this->comp_->hasPort;
+    }
+
+    bool Uri::hasPath() const
+    {
+        return this->comp_->hasPath;
+    }
+
+    bool Uri::hasQueryParams() const
+    {
+        return this->comp_->hasQueryParams;
+    }
+
+    bool Uri::hasFragment() const
+    {
+        return this->comp_->hasFragment;
+    }
+
+    bool Uri::isRelative() const
+    {
+        return this->comp_->isRelative;
+    }
 
 
 
