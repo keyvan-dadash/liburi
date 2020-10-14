@@ -58,6 +58,8 @@ namespace Uri {
             this->comp_->isRelative = true;
             return;
         }
+        size_t firstDot = uri.find('.');
+
         this->comp_->schema = uri.substr(0, delemiterChar);
         this->comp_->isRelative = false;
     }
@@ -176,23 +178,31 @@ namespace Uri {
         if (this->comp_->hastHost) {
             size_t endOfSlashSlash = uri.find("//") + 2;
             std::string stringAfterSlashSlash = uri.substr(endOfSlashSlash);
-            size_t pos = stringAfterSlashSlash.find('/');
-            while (pos != std::string::npos) {
-                size_t endOfLocalPath = stringAfterSlashSlash.find('/', pos + 1);
 
-                if (endOfLocalPath == std::string::npos)
-                    endOfLocalPath = stringAfterSlashSlash.find('?');
-                if (endOfLocalPath == std::string::npos)
-                    endOfLocalPath = stringAfterSlashSlash.size();
-
-                this->comp_->path.push_back(stringAfterSlashSlash.substr(pos + 1, (endOfLocalPath - pos - 1)));
-                pos = stringAfterSlashSlash.find('/', pos + 1);
+            size_t pathStartPos = stringAfterSlashSlash.find('/');
+            if (pathStartPos == std::string::npos) {
+                this->comp_->hasPath = false;
+                return;
             }
-        } else {
+            pathStartPos++;
+            size_t pathEndPos = stringAfterSlashSlash.find('?');
+
+            if (pathEndPos == std::string::npos) {
+                pathEndPos = stringAfterSlashSlash.find('#');
+                if (pathEndPos == std::string::npos) 
+                    pathEndPos = stringAfterSlashSlash.size();
+            }
+
+            std::string path = stringAfterSlashSlash.substr(pathStartPos, (pathEndPos - pathStartPos));
+            this->comp_->path = UriUtils::SplitUriPath(path);
+        } else if (!this->isRelative()) {
             size_t schemaEnd = uri.find(":") + 1;
             size_t pathEnd = uri.size();
             this->comp_->path.push_back(uri.substr(schemaEnd, (pathEnd - schemaEnd)));
+        } else {
+            this->comp_->path = UriUtils::SplitUriPath(uri);
         }
+
         if (this->comp_->path.size() >= 1) 
             this->comp_->hasPath = true;
         else 
@@ -217,12 +227,14 @@ namespace Uri {
 
         std::map< std::string, std::string > queryParams;
         for(auto &paramWithKV : paramsWithKeyAndValue) {
-            size_t startOfValue = paramWithKV.find('=') + 1;
+            size_t startOfValue = paramWithKV.find('=');
             std::string value;
-            if (startOfValue == std::string::npos) 
+            if (startOfValue == std::string::npos) {
                 value = "";
-            else
+            } else {
+                startOfValue++;
                 value = paramWithKV.substr(startOfValue, (paramWithKV.size() - startOfValue));
+            }
             
             size_t endOfKey = startOfValue - 1;
             queryParams[paramWithKV.substr(0, endOfKey)] = value;
@@ -331,4 +343,29 @@ namespace Uri {
 
 
 
+}
+
+namespace UriUtils {
+
+    std::vector< std::string > SplitUriPath(std::string path)
+    {
+        std::vector< std::string > paths;
+        size_t pos = -1;
+        size_t slashPos = path.find("/");
+        if (slashPos == std::string::npos) {
+            paths.push_back(path);
+            return paths;
+        }
+        do {
+            if (slashPos == std::string::npos) 
+                slashPos = path.size();
+            pos++;
+            std::string splitedPath = path.substr(pos, (slashPos - pos));
+            paths.push_back(splitedPath);
+            path = path.substr(slashPos);
+            pos = path.find("/");
+            slashPos = path.find("/", pos + 1);
+        } while(pos != std::string::npos);
+        return paths;
+    }
 }

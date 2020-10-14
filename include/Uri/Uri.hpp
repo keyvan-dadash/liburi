@@ -130,5 +130,11 @@ namespace Uri {
 
 }
 
+namespace UriUtils {
+
+    std::vector< std::string > SplitUriPath(std::string path);
+    
+}
+
 
 #endif

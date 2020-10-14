@@ -104,5 +104,70 @@ TEST(UriTests, ParseUriWithRelativeAndFullPath) {
     }
 }
 
+TEST(UriTests, GetPathOfRelativePath) {
+    Uri::Uri uri;
+    typedef struct {
+        std::string uri;
+        std::vector< std::string > path;
+    } relativePath;
+    std::vector< relativePath > tests {
+        {"/foo", std::vector< std::string > {"", "foo"}},
+        {"foo/", std::vector< std::string > {"foo", ""}},
+        {"/foo/", std::vector< std::string > {"", "foo", ""}},
+        {"/foo/bar/hoo/loo", std::vector< std::string > {"", "foo", "bar", "hoo", "loo"}},
+        {"foo/bar/hoo/loo/", std::vector< std::string > {"foo", "bar", "hoo", "loo", ""}},
+        {"https://www.example.com/foo/bar", std::vector< std::string > {"foo", "bar"}}
+    };
+    int index = 0;
+    for (auto &test : tests) {
+        ASSERT_TRUE(uri.parseFromString(test.uri)) << index;
+        ASSERT_EQ(uri.getPath(), test.path) << index;
+        index++;
+    }
+}
+
+TEST(UriTests, GetFragmentOfRelativePath) {
+    Uri::Uri uri;
+    typedef struct {
+        std::string uri;
+        std::string fragment;
+    } relativePath;
+    std::vector< relativePath > tests {
+        {"/foo#bar", "bar"},
+        {"foo/#bar2", "bar2"},
+        {"/foo/#foo", "foo"},
+        {"/foo/bar/hoo/loo#bar", "bar"},
+        {"foo/bar/hoo/loo/#bar1", "bar1"},
+        {"https://www.example.com/foo/bar#bar", "bar"}
+    };
+    int index = 0;
+    for (auto &test : tests) {
+        ASSERT_TRUE(uri.parseFromString(test.uri)) << index;
+        ASSERT_EQ(uri.getFragment(), test.fragment) << index;
+        index++;
+    }
+}
+
+TEST(UriTests, GetQueryParamsOfRelativePath) {
+    Uri::Uri uri;
+    typedef struct {
+        std::string uri;
+        std::map< std::string, std::string > querys;
+    } relativePath;
+    std::vector< relativePath > tests {
+        {"/foo?test=bar&test1", std::map< std::string, std::string > {{"test", "bar"}, {"test1", ""}}},
+        {"foo/?test2=bar1&tar=tir#bar2", std::map< std::string, std::string > {{"test2", "bar1"}, {"tar", "tir"}}},
+        {"/foo/?test2&tar=tir#foo", std::map< std::string, std::string > {{"test2", ""}, {"tar", "tir"}}},
+        {"/foo/bar/hoo/loo?foo#bar", std::map< std::string, std::string > {{"foo", ""}}},
+        {"foo/bar/hoo/loo/#bar1", std::map< std::string, std::string > {}},
+        {"https://www.example.com/foo/bar?foo=bar#bar", std::map< std::string, std::string > {{"foo", "bar"}}}
+    };
+    int index = 0;
+    for (auto &test : tests) {
+        ASSERT_TRUE(uri.parseFromString(test.uri)) << index;
+        ASSERT_EQ(uri.getQueryParams(), test.querys) << index;
+        index++;
+    }
+}
 
 #endif
