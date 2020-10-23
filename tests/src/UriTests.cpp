@@ -170,4 +170,52 @@ TEST(UriTests, GetQueryParamsOfRelativePath) {
     }
 }
 
+TEST(UriTests, InvalidPortTest) {
+    Uri::Uri uri;
+    typedef struct {
+        std::string uri;
+        bool isTrue;
+    } ports;
+    std::vector< ports > tests {
+        {"http://www.example:s/foo/do", false},
+        {"https://www.example:33/foo/do", true},
+        {"https://www.example:333213/foo/do", false},
+        {"https://www.example:spam/bar/foo", false},
+        {"https://loca.com:432", true},
+        {"https://www.example.com/foo/bar?foo=bar#bar", true}
+    };
+    int index = 0;
+    for (auto &test : tests) {
+        ASSERT_EQ(uri.parseFromString(test.uri), test.isTrue) << index;
+        index++;
+    }
+}
+
+TEST(UriTests, HostInvalidAndValidTest) {
+    Uri::Uri uri;
+    typedef struct {
+        std::string uri;
+        bool isTrue;
+    } hosts;
+    std::vector< hosts > tests {
+        {"h://www.example:32/foo/do", true},
+        {"4://www.example:33/foo/do", false},
+        {"xo://www.example:11/foo/do", true},
+        {"x-+.5://www.example:31/bar/foo", true},
+        {"ha0://loca.com:432", true},
+        {"0://loca.com:432", false},
+        {"fu9azAZ0://loca.com:432", true},
+        {"+://www.example.com/foo/bar?foo=bar#bar", false},
+        {"htt^ps://www.example.com/foo/bar?foo=bar#bar", false},
+        {"htt+ps://www.example.com/foo/bar?foo=bar#bar", true},
+        {"h-t+ps://www.example.com", true},
+        {"ht438+34j-://www.example.com/foo/bar?foo=bar#bar", true}
+    };
+    int index = 0;
+    for (auto &test : tests) {
+        ASSERT_EQ(uri.parseFromString(test.uri), test.isTrue) << index;
+        index++;
+    }
+}
+
 #endif

@@ -41,7 +41,7 @@ namespace Uri {
             this->comp_->isValid = true;
         } 
         catch (std::exception &ex) {
-            //std::cerr << ex.what() << std::endl;
+            // std::cerr << ex.what() << std::endl;
             this->comp_->isValid = false;
         }
         return this->comp_->isValid;
@@ -60,7 +60,12 @@ namespace Uri {
         }
         size_t firstDot = uri.find('.');
 
-        this->comp_->schema = uri.substr(0, delemiterChar);
+        std::string schema = uri.substr(0, delemiterChar);
+
+        UriUtils::validateSchema(schema);
+
+
+        this->comp_->schema = schema;
         this->comp_->isRelative = false;
     }
 
@@ -367,5 +372,26 @@ namespace UriUtils {
             slashPos = path.find("/", pos + 1);
         } while(pos != std::string::npos);
         return paths;
+    }
+
+    void validateSchema(std::string schema) {
+        size_t schemaSize = schema.size();
+
+        for (int i = 0; i < schemaSize; i++)
+        {
+            if (i == 0) {
+                if ((schema.at(i) >= 'a' && schema.at(i) <= 'z') || (schema.at(i) >= 'A' && schema.at(i) <= 'Z')) 
+                    continue;
+                throw std::runtime_error(std::string("first character of schema is invalid"));
+            } else {
+                if ((schema.at(i) >= 'a' && schema.at(i) <= 'z') || (schema.at(i) >= 'A' && schema.at(i) <= 'Z'))
+                    continue;
+                else if (schema.at(i) >= '0' && schema.at(i) <= '9')
+                    continue;
+                else if (schema.at(i) == '-' || schema.at(i) == '+' || schema.at(i) == '.')
+                    continue;
+                throw std::runtime_error(std::string("invalid char got in schema at position " + std::to_string(i)));
+            }
+        }
     }
 }
