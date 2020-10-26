@@ -36,6 +36,8 @@ namespace Uri {
 
                 bool isValid;
 
+                bool isIPLiteral;
+
                 bool hasSchema;
 
                 bool hasUserInfo;

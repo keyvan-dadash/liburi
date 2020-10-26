@@ -101,29 +101,46 @@ namespace Uri {
         }
         this->comp_->hastHost = true;
 
-        //must refac this bcs it is dublicate
+        size_t startOfHost = startOfSlashSlash + 2;
         if (this->comp_->hasUserInfo) {
-            size_t atSignPtr = uri.find('@');
+            startOfHost = uri.find('@');
+            startOfHost++;
+        }
 
-            size_t endOfHost = uri.substr(atSignPtr + 1).find(':');
+        char firstHostChar = uri.at(startOfHost);
+        size_t endOfHost = std::string::npos;
+        switch (firstHostChar)
+        {
+        case '[': { //IP-literal
+            endOfHost = uri.find(']');
             if (endOfHost == std::string::npos) {
-                endOfHost = uri.substr(atSignPtr + 1).find('/');
+                this->comp_->hastHost = false;
+                throw std::runtime_error(std::string("Detected IP-literal but cannot find end of IP-literal"));
+            }
+            std::string host = uri.substr(startOfHost + 1, endOfHost - startOfHost - 1);
+            if (host.at(0) == 'v' || host.at(0) == 'V') {
+                size_t firstDot = host.find(".");
+                if (firstDot == std::string::npos)
+                    std::runtime_error(std::string("host is IP-literal but is wrong"));
+                host.at(firstDot) = '-';
+            }
+            this->comp_->host = std::move(host);
+            this->comp_->isIPLiteral = true;
+            break;
+        }
+        
+        default: { //reg or ipv4
+            endOfHost = uri.substr(startOfHost).find(':');
+            if (endOfHost == std::string::npos) {
+                endOfHost = uri.substr(startOfHost).find('/');
                 if (endOfHost == std::string::npos)
                     endOfHost = uri.size();
             }
-            endOfHost += atSignPtr;
-            this->comp_->host = uri.substr(atSignPtr + 1, (endOfHost - atSignPtr));
-        } else {
-            size_t endOfSlashSlash = startOfSlashSlash + 2;
-
-            size_t endOfHost = uri.substr(endOfSlashSlash).find(':');
-            if (endOfHost == std::string::npos) {
-                endOfHost = uri.substr(endOfSlashSlash).find('/');
-                if (endOfHost == std::string::npos)
-                    endOfHost = uri.size();
-            }
-            endOfHost += endOfSlashSlash;
-            this->comp_->host = uri.substr(endOfSlashSlash, (endOfHost - endOfSlashSlash));
+            endOfHost += startOfHost;
+            this->comp_->host = uri.substr(startOfHost, (endOfHost - startOfHost));
+            this->comp_->isIPLiteral = false;
+            break;
+        }
         }
     }
 
@@ -131,23 +148,50 @@ namespace Uri {
     {
         std::string uri = this->comp_->uri;
 
-        size_t colonAfterSchema = uri.find(":");
-        size_t colonBeforePortAfterSchmea = uri.find(":", colonAfterSchema + 1);
+        size_t startOfPort = std::string::npos;
 
-        if (colonBeforePortAfterSchmea == std::string::npos) {
+        if(this->comp_->isIPLiteral) {
+            size_t endOfIPLiteral = uri.find("]");
+            if (endOfIPLiteral == std::string::npos) {
+                this->comp_->isValid = false;
+                throw std::runtime_error(std::string("Detected IPLiteral but cannot find end of IPLiteral"));
+            }
+            size_t colonAfterHost = uri.substr(endOfIPLiteral).find(":");
+            if (colonAfterHost == std::string::npos) {
+                this->comp_->hasPort = false;
+                this->comp_->port = DEFAULT_PORT;
+                return;
+            }
+            startOfPort = colonAfterHost + 1 + endOfIPLiteral;
+        } else {
+            size_t colonAfterSchema = uri.find(":");
+            size_t colonBeforePortAfterSchmea = uri.find(":", colonAfterSchema + 1);
+
+            if (colonBeforePortAfterSchmea == std::string::npos) {
+                this->comp_->hasPort = false;
+                this->comp_->port = DEFAULT_PORT;
+                return;
+            }
+            startOfPort = colonBeforePortAfterSchmea + 1;
+        }
+
+        if (startOfPort == std::string::npos) {
             this->comp_->hasPort = false;
             this->comp_->port = DEFAULT_PORT;
             return;
         }
+
         this->comp_->hasPort = true;
 
-        size_t endOfPort = uri.substr(colonBeforePortAfterSchmea + 1).find("/");
+        size_t endOfPort = uri.substr(startOfPort + 1).find("/");
         if (endOfPort == std::string::npos) {
             endOfPort = uri.size();
         } else {
-            endOfPort += colonBeforePortAfterSchmea;
+            endOfPort += startOfPort;
         }
-        std::string port = uri.substr(colonBeforePortAfterSchmea + 1, (endOfPort - colonBeforePortAfterSchmea));
+
+        std::string port = uri.substr(startOfPort, endOfPort - startOfPort + 1);
+
         int portStartIndex = 0;
         int prefixZeroIndex = 0;
 

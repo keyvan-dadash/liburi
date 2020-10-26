@@ -218,4 +218,29 @@ TEST(UriTests, HostInvalidAndValidTest) {
     }
 }
 
+TEST(UriTests, HostIPLiteralAndRegName) {
+    Uri::Uri uri;
+    typedef struct {
+        std::string uri;
+        std::string host;
+    } hosts;
+    std::vector< hosts > tests {
+        {"h://www.example:32/foo/do", "www.example"},
+        {"https://192.168.2.2/foo/bar", "192.168.2.2"},
+        {"xo://www.foobar.org:11/foo/do", "www.foobar.org"},
+        {"x-+.5://foobar.org:31/bar/foo", "foobar.org"},
+        {"ha0://loca.org.ta.com:432", "loca.org.ta.com"},
+        {"https://10.1.2.255:432", "10.1.2.255"},
+        {"ldap://[2001:db8::7]/c=GB?objectClass?one", "2001:db8::7"},
+        {"ldap://[2001:db8::7]:8080/c=GB?objectClass?one", "2001:db8::7"},
+        {"ldap://[v8.2001:db8::7]/c=GB?objectClass?one", "v8-2001:db8::7"}
+    };
+    int index = 0;
+    for (auto &test : tests) {
+        ASSERT_TRUE(uri.parseFromString(test.uri)) << index;
+        ASSERT_EQ(uri.getHost(), test.host) << index;
+        index++;
+    }
+}
+
 #endif
